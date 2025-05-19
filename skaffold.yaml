@@ -1,0 +1,25 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: Flink k8s Skaffold
+requires:
+  - configs:
+      - cert-manager
+    path: skaffold/cert-manager.yaml
+  - configs:
+      - o11y
+    path: skaffold/o11y.yaml
+  - configs:
+      - minio
+    path: skaffold/minio.yaml
+  - configs:
+      - kafka
+    path: skaffold/kafka.yaml
+  - configs:
+      - flink
+    path: skaffold/flink.yaml
+profiles:
+  - name: no-flink
+    patches:
+      - op: remove
+        path: /requires/4

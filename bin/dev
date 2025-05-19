@@ -1,0 +1,268 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+source $SCRIPTS/common.sh
+
+# @cmd Ensures configuration has been initialized
+setup() {
+	mkdir -p $LOCAL
+}
+
+# @cmd Ensures code is formatted and that tests pass
+# @flag --format        Run formatters
+# @flag --lint          Run ruff linter
+# @flag --typecheck     Run typechecks
+# @flag --test          Run tests
+check() {
+	flag_count=0
+	[[ $argc_format -eq 1 ]] && flag_count+=1
+	[[ $argc_lint -eq 1 ]] && flag_count+=1
+	[[ $argc_typecheck -eq 1 ]] && flag_count+=1
+	[[ $argc_test -eq 1 ]] && flag_count+=1
+	if [[ $flag_count -eq 0 ]] || [[ $argc_format -eq 1 ]]; then
+		runp "ruff format ."
+	fi
+	if [[ $flag_count -eq 0 ]] || [[ $argc_lint -eq 1 ]]; then
+		runp "ruff format --check ."
+	fi
+	if [[ $flag_count -eq 0 ]] || [[ $argc_typecheck -eq 1 ]]; then
+		runp "pyright"
+	fi
+	if [[ $flag_count -eq 0 ]] || [[ $argc_test -eq 1 ]]; then
+		runp "pytest -vv --no-header src"
+	fi
+}
+
+# @cmd Manage local k3d cluster
+k3d() { :; }
+
+# @cmd Create k3d cluster
+k3d::create() {
+	runp """
+  k3d cluster create mainflame \
+    --image rancher/k3s:v1.31.4-k3s1 \
+    --k3s-arg '--disable=traefik@server:*' \
+    --port '80:80@loadbalancer'
+  """
+}
+
+# @cmd Delete k3d cluster
+k3d::delete() {
+	runp "k3d cluster delete mainflame"
+}
+
+# @cmd Start k3d cluster
+k3d::start() {
+	runp "k3d cluster start mainflame"
+}
+
+# @cmd Stop k3d cluster
+k3d::stop() {
+	runp "k3d cluster stop mainflame"
+}
+
+# @cmd Continuous development for kubernetes
+skaffold() { :; }
+
+# @cmd Continuous development for all pipelines
+skaffold::all() { :; }
+
+# @cmd Run all pipeline once
+skaffold::all::run() {
+	runp """
+  skaffold run \
+    --port-forward=user \
+    -f skaffold.yaml
+  """
+}
+
+# @cmd Generate manifests for all pipeline
+skaffold::all::render() {
+	runp """
+  skaffold render \
+    -f skaffold.yaml
+  """
+}
+
+# @cmd Delete resources deployed by all pipeline
+skaffold::all::delete() {
+	runp """
+  skaffold delete \
+    -f skaffold.yaml
+  """
+}
+
+# @cmd Continuous development for all pipelines except bank & insurance
+skaffold::no-apps() { :; }
+
+# @cmd Run no-apps pipeline once
+skaffold::no-apps::run() {
+	runp """
+  skaffold run \
+    --port-forward=user \
+    -f skaffold.yaml \
+    --profile no-apps
+  """
+}
+
+# @cmd Generate manifests for no-apps pipeline
+skaffold::no-apps::render() {
+	runp """
+  skaffold render \
+    -f skaffold.yaml \
+    --profile no-apps
+  """
+}
+
+# @cmd Delete resources deployed by no-apps pipeline
+skaffold::no-apps::delete() {
+	runp """
+  skaffold delete \
+    -f skaffold.yaml \
+    --profile no-apps
+  """
+}
+
+# @cmd Continuous development for o11y pipeline
+skaffold::o11y() { :; }
+
+# @cmd Run o11y pipeline once
+skaffold::o11y::run() {
+	runp """
+  skaffold run \
+    --port-forward=user \
+    -f skaffold.o11y.yaml
+  """
+}
+
+# @cmd Generate manifests for o11y pipeline
+skaffold::o11y::render() {
+	runp """
+  skaffold render \
+    -f skaffold.o11y.yaml
+  """
+}
+
+# @cmd Delete resources deployed by o11y pipeline
+skaffold::o11y::delete() {
+	runp """
+  skaffold delete \
+    -f skaffold.o11y.yaml
+  """
+}
+
+# @cmd Continuous development for kafka pipeline
+skaffold::kafka() { :; }
+
+# @cmd Run kafka pipeline once
+skaffold::kafka::run() {
+	runp """
+  skaffold run \
+    --port-forward=user \
+    -f skaffold.kafka.yaml
+  """
+}
+
+# @cmd Generate manifests for kafka pipeline
+skaffold::kafka::render() {
+	runp """
+  skaffold render \
+    -f skaffold.kafka.yaml
+  """
+}
+
+# @cmd Delete resources deployed by kafka pipeline
+skaffold::kafka::delete() {
+	runp """
+  skaffold delete \
+    -f skaffold.kafka.yaml
+  """
+}
+
+# @cmd Continuous development for flink pipeline
+skaffold::flink() { :; }
+
+# @cmd Run flink pipeline once
+skaffold::flink::run() {
+	runp """
+  skaffold run \
+    --port-forward=user \
+    -f skaffold.flink.yaml
+  """
+}
+
+# @cmd Generate manifests for flink pipeline
+skaffold::flink::render() {
+	runp """
+  skaffold render \
+    -f skaffold.flink.yaml
+  """
+}
+
+# @cmd Delete resources deployed by flink pipeline
+skaffold::flink::delete() {
+	runp """
+  skaffold delete \
+    -f skaffold.flink.yaml
+  """
+}
+
+# @cmd Continuous development for bank pipeline
+skaffold::bank() { :; }
+
+# @cmd Run bank pipeline once
+skaffold::bank::run() {
+	runp """
+  skaffold run \
+    --port-forward=user \
+    -f skaffold.bank.yaml
+  """
+}
+
+# @cmd Generate manifests for bank pipeline
+skaffold::bank::render() {
+	runp """
+  skaffold render \
+    -f skaffold.bank.yaml
+  """
+}
+
+# @cmd Delete resources deployed by bank pipeline
+skaffold::bank::delete() {
+	runp """
+  skaffold delete \
+    -f skaffold.bank.yaml
+  """
+}
+
+# @cmd Continuous development for insurance pipeline
+skaffold::insurance() { :; }
+
+# @cmd Run insurance pipeline once
+skaffold::insurance::run() {
+	runp """
+  skaffold run \
+    --port-forward=user \
+    -f skaffold.insurance.yaml
+  """
+}
+
+# @cmd Generate manifests for insurance pipeline
+skaffold::insurance::render() {
+	runp """
+  skaffold render \
+    -f skaffold.insurance.yaml
+  """
+}
+
+# @cmd Delete resources deployed by insurance pipeline
+skaffold::insurance::delete() {
+	runp """
+  skaffold delete \
+    -f skaffold.insurance.yaml
+  """
+}
+
+# Parse args and apply them to the specified function
+dev --ensure-devshell "$@"
